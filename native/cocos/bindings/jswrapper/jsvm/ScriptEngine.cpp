@@ -30,7 +30,12 @@
 #include "State.h"
 #include "Utils.h"
 #include "CommonHeader.h"
+
+#if CC_PLATFORM == CC_PLATFORM_OPENHARMONY
 #include "ark_runtime/jsvm.h"
+#else
+#include "jsvm.h"
+#endif
 
 #define _EXPOSE_GC "__jsb_gc__"
 
@@ -56,7 +61,7 @@ se::Value __oldConsoleWarn;
 se::Value __oldConsoleError;
 se::Value __oldConsoleAssert;
 
-bool JSB_console_format_log(State& s, const char* prefix, int msgIndex = 0) {
+bool JSB_console_format_log(State& s, cc::LogLevel level, int msgIndex = 0) {
     if (msgIndex < 0)
         return false;
 
@@ -64,7 +69,7 @@ bool JSB_console_format_log(State& s, const char* prefix, int msgIndex = 0) {
     int argc = (int)args.size();
     if ((argc - msgIndex) == 1) {
         std::string msg = args[msgIndex].toStringForce();
-        SE_LOGD("JS: %s%s\n", prefix, msg.c_str());
+        cc::Log::logMessage(cc::LogType::KERNEL, level, "JS: %s", msg.c_str());
     } else if (argc > 1) {
         std::string msg = args[msgIndex].toStringForce();
         size_t pos;
@@ -77,14 +82,13 @@ bool JSB_console_format_log(State& s, const char* prefix, int msgIndex = 0) {
                     msg += " " + args[i].toStringForce();
                 }
         }
-
-        SE_LOGD("JS: %s%s\n", prefix, msg.c_str());
+        cc::Log::logMessage(cc::LogType::KERNEL, level, "JS: %s", msg.c_str());
     }
     return true;
 }
 
 bool JSB_console_log(State& s) {
-    JSB_console_format_log(s, "");
+    JSB_console_format_log(s, cc::LogLevel::LEVEL_DEBUG);
     __oldConsoleLog.toObject()->call(s.args(), s.thisObject());
     return true;
 }
@@ -92,7 +96,7 @@ bool JSB_console_log(State& s) {
 SE_BIND_FUNC(JSB_console_log)
 
 bool JSB_console_debug(State& s) {
-    JSB_console_format_log(s, "[DEBUG]: ");
+    JSB_console_format_log(s, cc::LogLevel::LEVEL_DEBUG);
     __oldConsoleDebug.toObject()->call(s.args(), s.thisObject());
     return true;
 }
@@ -100,7 +104,7 @@ bool JSB_console_debug(State& s) {
 SE_BIND_FUNC(JSB_console_debug)
 
 bool JSB_console_info(State& s) {
-    JSB_console_format_log(s, "[INFO]: ");
+    JSB_console_format_log(s, cc::LogLevel::INFO);
     __oldConsoleInfo.toObject()->call(s.args(), s.thisObject());
     return true;
 }
@@ -108,7 +112,7 @@ bool JSB_console_info(State& s) {
 SE_BIND_FUNC(JSB_console_info)
 
 bool JSB_console_warn(State& s) {
-    JSB_console_format_log(s, "[WARN]: ");
+    JSB_console_format_log(s, cc::LogLevel::WARN);
     __oldConsoleWarn.toObject()->call(s.args(), s.thisObject());
     return true;
 }
@@ -116,7 +120,7 @@ bool JSB_console_warn(State& s) {
 SE_BIND_FUNC(JSB_console_warn)
 
 bool JSB_console_error(State& s) {
-    JSB_console_format_log(s, "[ERROR]: ");
+    JSB_console_format_log(s, cc::LogLevel::ERR);
     __oldConsoleError.toObject()->call(s.args(), s.thisObject());
     return true;
 }
@@ -127,7 +131,7 @@ bool JSB_console_assert(State& s) {
     const auto& args = s.args();
     if (!args.empty()) {
         if (args[0].isBoolean() && !args[0].toBoolean()) {
-            JSB_console_format_log(s, "[ASSERT]: ", 1);
+            JSB_console_format_log(s, cc::LogLevel::WARN, 1);
             __oldConsoleAssert.toObject()->call(s.args(), s.thisObject());
         }
     }
@@ -138,9 +142,15 @@ SE_BIND_FUNC(JSB_console_assert)
 
 ScriptEngine *gSriptEngineInstance = nullptr;
 
-ScriptEngine::ScriptEngine() { OH_JSVM_Init(nullptr); };
+ScriptEngine::ScriptEngine() {
+    OH_JSVM_Init(nullptr);
+    gSriptEngineInstance = this;
+};
 
-ScriptEngine::~ScriptEngine() = default;
+ScriptEngine::~ScriptEngine() {
+    cleanup();
+    gSriptEngineInstance = nullptr;
+};
 
 void ScriptEngine::setFileOperationDelegate(const FileOperationDelegate &delegate) {
     _fileOperationDelegate = delegate;
@@ -151,19 +161,12 @@ const ScriptEngine::FileOperationDelegate &ScriptEngine::getFileOperationDelegat
 }
 
 ScriptEngine *ScriptEngine::getInstance() {
-    if (gSriptEngineInstance == nullptr) {
-        gSriptEngineInstance = new ScriptEngine();
-    }
-
     return gSriptEngineInstance;
 }
 
 void ScriptEngine::destroyInstance() {
-    if (gSriptEngineInstance) {
-        gSriptEngineInstance->cleanup();
-        delete gSriptEngineInstance;
-        gSriptEngineInstance = nullptr;
-    }
+    // ScriptEngine instance is managed in Engine.cpp, it will be deleted in `Engine::~Engine()`
+    // So doesn't need to implement this method now.
 }
 
 bool ScriptEngine::runScript(const std::string &path, Value *ret /* = nullptr */) {
@@ -186,7 +189,7 @@ bool ScriptEngine::evalString(const char *scriptStr, ssize_t length, Value *ret,
     JSVM_Value  jsvmStr;
     NODE_API_CALL(status, _env, OH_JSVM_CreateStringUtf8(_env, scriptStr, length, &jsvmStr));
     if(status != JSVM_OK) {
-        SE_LOGE("ScriptEngine::evalString, create string failed, fileName = %{public}s", fileName);
+        CC_LOG_ERROR("ScriptEngine::evalString, create string failed, fileName = %s", fileName);
         return false;
     }
 
@@ -197,7 +200,7 @@ bool ScriptEngine::evalString(const char *scriptStr, ssize_t length, Value *ret,
     JSVM_Script compiledScript;
     JSVM_ScriptOrigin scriptOrigin{
         .sourceMapUrl = nullptr,
-        .resourceName = fileName,
+        .resourceName = fileName ? fileName : "",
         .resourceLineOffset = 0,
         .resourceColumnOffset = 0
     };
@@ -206,21 +209,23 @@ bool ScriptEngine::evalString(const char *scriptStr, ssize_t length, Value *ret,
                   OH_JSVM_CompileScriptWithOrigin(_env, jsvmStr, cachedData, cacheLength, false, &cacheRejected,&scriptOrigin, &compiledScript));
     
     if(status != JSVM_OK) {
-       SE_LOGE("ScriptEngine::evalSting, compile failed, fileName = %{public}s", fileName);
+       CC_LOG_ERROR("ScriptEngine::evalSting, compile failed, fileName = %s", fileName);
        return false;
     }
 
     JSVM_Value result;
     NODE_API_CALL(status, _env, OH_JSVM_RunScript(_env, compiledScript, &result));
     if(status != JSVM_OK) {
-       SE_LOGE("ScriptEngine::evelSting, run failed, fileName = %{public}s", fileName);
+       CC_LOG_ERROR("ScriptEngine::evelSting, run failed, fileName = %s", fileName);
        return false;
     }
 
-    if(!cachedData || cacheRejected) {
-        NODE_API_CALL(status, _env,
-                      OH_JSVM_CreateCodeCache(_env, compiledScript, (const uint8_t **)&cachedData, &cacheLength));
-    }
+    // NOTE: Currently, we don't support JSVM code cache saving/loading.
+    // So creating code cache here is useless and wastes memory.
+//    if(!cachedData || cacheRejected) {
+//        NODE_API_CALL(status, _env,
+//                      OH_JSVM_CreateCodeCache(_env, compiledScript, (const uint8_t **)&cachedData, &cacheLength));
+//    }
     
     if(ret) {
         internal::jsToSeValue(result, ret);
@@ -236,13 +241,17 @@ bool ScriptEngine::init() {
     for (const auto &hook : _beforeInitHookArray) {
         hook();
     }
-
+    _beforeInitHookArray.clear();
     NODE_API_CALL(status, _env, OH_JSVM_CreateVM(nullptr, &_vm));
     NODE_API_CALL(status, _env, OH_JSVM_OpenVMScope(_vm, &_vmScope));
     NODE_API_CALL(status, _env, OH_JSVM_CreateEnv(_vm, 0, nullptr, &_env));
     NODE_API_CALL(status, _env, OH_JSVM_OpenEnvScope(_env, &_envScope));
 
     se::AutoHandleScope hs;
+    
+    uint32_t jsvmVersion = 0;
+    NODE_API_CALL(status, _env, OH_JSVM_GetVersion(_env, &jsvmVersion));
+    SE_LOGD("Initializing JSVM, version: %u\n", jsvmVersion);
 
     Object::setup();
     NativePtrToObjectMap::init();
@@ -295,6 +304,21 @@ bool ScriptEngine::init() {
 
 Object *ScriptEngine::getGlobalObject() const { return _globalObj; }
     
+void ScriptEngine::closeEngine() {
+    JSVM_Env env = _env;
+    _env = nullptr;
+
+    JSVM_Status status;
+    NODE_API_CALL(status, env, OH_JSVM_CloseEnvScope(env, _envScope));
+    NODE_API_CALL(status, env, OH_JSVM_DestroyEnv(env));
+    NODE_API_CALL(status, env, OH_JSVM_CloseVMScope(_vm, _vmScope));
+    NODE_API_CALL(status, env, OH_JSVM_DestroyVM(_vm));
+    _envScope = nullptr;
+    env = nullptr;
+    _vmScope = nullptr;
+    _vm = nullptr;
+}
+
 bool ScriptEngine::start() {
     bool ok = true;
     if (!init()) {
@@ -329,47 +353,46 @@ void ScriptEngine::cleanup() {
     if (!_isValid) {
         return;
     }
-
     SE_LOGD("ScriptEngine::cleanup begin ...\n");
     _isInCleanup = true;
-
+    se::AutoHandleScope hs;
     do{
-        se::AutoHandleScope hs;
         for (const auto &hook : _beforeCleanupHookArray) {
             hook();
         }
-        _beforeCleanupHookArray.clear();
     }while (0);
-    
+    _beforeCleanupHookArray.clear();
 
     SAFE_DEC_REF(_globalObj);
     Object::cleanup();
     Class::cleanup();
     garbageCollect();
 
-    JSVM_Status status;
-    NODE_API_CALL(status, _env, OH_JSVM_CloseEnvScope(_env, _envScope));
-
-    NODE_API_CALL(status, _env, OH_JSVM_DestroyEnv(_env));
-    NODE_API_CALL(status, _env, OH_JSVM_CloseVMScope(_vm, _vmScope));
-    NODE_API_CALL(status, _env, OH_JSVM_DestroyVM(_vm));
-    _envScope = nullptr;
-    _env = nullptr;
-    _vmScope = nullptr;
-    _vm = nullptr;
+    __oldConsoleLog.setUndefined();
+    __oldConsoleDebug.setUndefined();
+    __oldConsoleInfo.setUndefined();
+    __oldConsoleWarn.setUndefined();
+    __oldConsoleError.setUndefined();
+    __oldConsoleAssert.setUndefined();
 
     _globalObj = nullptr;
     _isValid   = false;
+    _gcFunc = nullptr;
 
     _registerCallbackArray.clear();
 
     for (const auto &hook : _afterCleanupHookArray) {
         hook();
     }
+    _beforeInitHookArray.clear();
+    _afterInitHookArray.clear();
+    _beforeCleanupHookArray.clear();
     _afterCleanupHookArray.clear();
 
     _isInCleanup = false;
     NativePtrToObjectMap::destroy();
+    _gcFuncValue.setUndefined();
+    
     SE_LOGD("ScriptEngine::cleanup end ...\n");
 }
 
@@ -403,8 +426,7 @@ void ScriptEngine::addPermanentRegisterCallback(RegisterCallback cb) {
 }
 
 void ScriptEngine::setExceptionCallback(const ExceptionCallback &cb) {
-    //not impl
-    return;
+    _exceptionCallback = cb;
 }
 
 const std::chrono::steady_clock::time_point &ScriptEngine::getStartTime() const { return _startTime; }
@@ -421,13 +443,18 @@ bool ScriptEngine::saveByteCodeToFile(const std::string &path, const std::string
     return true;
 }
 
+bool ScriptEngine::runByteCodeFile(const std::string &pathBc, Value *ret /* = nullptr */) {
+    // TO BE IMPLEMENTED
+    return false;
+}
+
 void ScriptEngine::clearException() {
     //not impl
     return;
 }
 
 void ScriptEngine::garbageCollect() {
-    SE_LOGD("GC begin ..., (js->native map) size: %{public}d",(int)NativePtrToObjectMap::size());
+    CC_LOG_DEBUG("GC begin ..., (js->native map) size: %d",(int)NativePtrToObjectMap::size());
 
     if(_gcFunc == nullptr) {
         JSVM_Status status;
@@ -436,7 +463,7 @@ void ScriptEngine::garbageCollect() {
         _gcFunc->call({}, nullptr);
     }
     
-    SE_LOGD("GC end ..., (js->native map) size: %{public}d",(int)NativePtrToObjectMap::size());
+    CC_LOG_DEBUG("GC end ..., (js->native map) size: %d",(int)NativePtrToObjectMap::size());
 }
 
 bool ScriptEngine::isGarbageCollecting() const {
@@ -473,9 +500,10 @@ bool ScriptEngine::callFunction(Object *targetObj, const char *funcName, uint32_
     }
 
     ValueArray argv;
+    argv.resize(argc);
 
     for (size_t i = 0; i < argc; ++i) {
-        argv.push_back(args[i]);
+        argv[i] = args[i];
     }
 
     objFunc.toObject()->call(argv, targetObj, rval);
@@ -495,6 +523,6 @@ void ScriptEngine::mainLoopUpdate() {
 
 void ScriptEngine::throwException(const std::string &errorMessage) {
     JSVM_Status status;
-    NODE_API_CALL_RETURN_VOID(getEnv(), OH_JSVM_ThrowError(getEnv(), nullptr, errorMessage.c_str()));
+    NODE_API_CALL(status, getEnv(), OH_JSVM_ThrowError(getEnv(), nullptr, errorMessage.c_str()));
 }
 }; // namespace se

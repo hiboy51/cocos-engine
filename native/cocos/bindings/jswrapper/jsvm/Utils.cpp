@@ -102,12 +102,11 @@ void jsToSeValue(const target_value& value, Value* v) {
         case JSVM_ValueType::JSVM_OBJECT:
         case JSVM_ValueType::JSVM_FUNCTION:
             status = OH_JSVM_Unwrap(env, value, &privateObjPtr);
-             if (status == JSVM_OK && privateObjPtr) {
-                nativePtr = reinterpret_cast<Object*>(privateObjPtr)->getPrivateData();
+            if (status == JSVM_OK && privateObjPtr) {
+                obj = reinterpret_cast<Object*>(privateObjPtr);
+                obj->incRef();
             }
-            if(nativePtr) {
-                obj = Object::getObjectWithPtr(nativePtr);
-            }
+            
             if (obj == nullptr) {
                 obj = Object::_createJSObject(env, value, nullptr);
             }
@@ -194,5 +193,48 @@ bool setReturnValue(const Value& data, target_value& argv) {
 
     return seToJsValue(data, &argv);
 }
+
+std::string jsToString(const target_value &value) {
+    se::Value seValue;
+    internal::jsToSeValue(value, &seValue);
+    if (seValue.isString()) {
+        return seValue.toString();
+    } else {
+        return "";
+    }
+}
+
+void logJsException(JSVM_Env env, const char *file, int line) {
+    bool isPending = false;
+    JSVM_CALL_RETURN_VOID(OH_JSVM_IsExceptionPending(env, &isPending));
+    if (!isPending) {
+        return;
+    }
+
+    JSVM_Value error;
+    JSVM_CALL_RETURN_VOID(OH_JSVM_GetAndClearLastException(env, &error));
+
+    JSVM_Value name;
+    JSVM_CALL_RETURN_VOID(OH_JSVM_GetNamedProperty(env, error, "name", &name));
+
+    JSVM_Value stack;
+    JSVM_CALL_RETURN_VOID(OH_JSVM_GetNamedProperty(env, error, "stack", &stack));
+
+    JSVM_Value message;
+    JSVM_CALL_RETURN_VOID(OH_JSVM_GetNamedProperty(env, error, "stack", &message));
+
+    std::string nameStr = jsToString(name);
+    std::string stackStr = jsToString(stack);
+    std::string messageStr = jsToString(message);
+
+    CC_LOG_ERROR("JS exception occurred at %s:%d\n\
+            [name]: %s\n\
+            [message]: %s\n\
+            [stack]: %s",
+            file, line, nameStr.c_str(), messageStr.c_str(), stackStr.c_str());
+    auto exceptionCallback = ScriptEngine::getInstance()->getExceptionCallback();
+    exceptionCallback("", messageStr.c_str(), stackStr.c_str());
+}
+
 } // namespace internal
 }; // namespace se

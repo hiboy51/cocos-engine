@@ -975,6 +975,26 @@ module.exports = link(mixin({
             label: "Basic 2D Features",
             description: "Components and tools that are widely used in general 2D applications.",
         },
+        rich_text: {
+            label: "Rich Text",
+            description: "Rich text support.",
+        },
+        mask: {
+            label: "Mask",
+            description: "Mask support.",
+        },
+        graphics_2d: {
+            label: "Graphic Drawing",
+            description: "2D Graphic Drawing support.",
+        },
+        ui_skew: {
+            label: "Skew",
+            description: "Skew support.",
+        },
+        affine_transform: {
+            label: "2D Affine Transform",
+            description: "2D Affine Transform support.",
+        },
         physics_2d: {
             label: "2D Physics System",
             description: "Physics system that applied to 2D application.",
@@ -990,6 +1010,10 @@ module.exports = link(mixin({
         physics_2d_box2d_wasm: {
             label: "Box2D-wasm Based 2D Physics System",
             description: "2D Physics system that based on Box2D-wasm.",
+        },
+        physics_2d_box2d_jsb: {
+            label: "Box2D-JSB Based 2D Physics System",
+            description: "2D Physics system that based on Box2D-JSB.",
         },
         intersection_2d: {
             label: "2D Intersection Algorithms",
@@ -1050,6 +1074,14 @@ module.exports = link(mixin({
         spine: {
             label: "Spine Animation",
             description: "Spine Animation support.",
+        },
+        spine_38: {
+            label: "Spine 3.8",
+            description: "Spine 3.8",
+        },
+        spine_42: {
+            label: "Spine 4.2",
+            description: "Spine 4.2",
         },
         dragon_bones: {
             label: "Dragon Bones",

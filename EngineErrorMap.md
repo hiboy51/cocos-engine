@@ -160,6 +160,10 @@ cc.ReverseTime.initWithAction(): the action was already passed in.
 <!-- DEPRECATED -->
 cc.Animate.initWithAnimation(): animation must be non-NULL
 
+### 1031
+
+Set `setter` to boolean is deprecated. Please don not use like this again.
+
 ### 1100
 
 Expected 'data' dict, but not found. Config file: %s
@@ -273,7 +277,7 @@ Failed to initialize render pipeline.
 
 ### 1223
 
-Custom pipeline and legacy pipeline are all culled. 
+Custom pipeline and legacy pipeline are all culled.
 
 ### 1300
 
@@ -1653,6 +1657,10 @@ internal error: _prefab is undefined
 
 Failed to load prefab asset for node '%s'
 
+### 3702
+
+The json file of asset %s is empty or missing.
+
 ### 3800
 
 The target can not be made persist because it's not a cc.Node or it doesn't have _id property.
@@ -1999,6 +2007,10 @@ Invalid RichText img tag! The sprite frame name can't be found in the ImageAtlas
 
 Graphics: There is no model in %s.
 
+### 4501
+
+Graphics feature is not enabled in 'Project Settings -> Feature Cropping', %s
+
 ### 4600
 
 Script attached to '%s' is missing or invalid.
@@ -2194,6 +2206,14 @@ browser don't support web audio
 ### 5202
 
 This feature supports WebGL render mode only.
+
+### 5203
+
+Audio buffer cache %s has not been added.
+
+### 5204
+
+Audio buffer %s has been cached.
 
 ### 5300
 
@@ -2870,6 +2890,14 @@ cc.TMXLayer.getTileFlagsAt(): TMXLayer: the tiles map has been released
 
 cc.TiledMap.initWithXML(): Map not found. Please check the filename.
 
+### 7242
+
+TiledLayer.addUserNode node has been added.
+
+### 7243
+
+TiledLayer.removeUserNode node is not exist
+
 ### 7300
 
 <!-- DEPRECATED -->
@@ -3169,6 +3197,14 @@ QuadRenderData is removed, please use MeshRenderData instead.
 
 Since v3.6, Because mask changes the inheritance relationship, you can directly manipulate the rendering components under the same node to complete the operation.
 
+### 9008
+
+request fullscreen is not supported on this platform.
+
+### 9009
+
+exit fullscreen is not supported on this platform.
+
 ### 9100
 
 texture size exceeds current device limits %d/%d
@@ -3245,6 +3281,10 @@ Can't getGFXSampler with out device
 ### 9643
 
 [Physics] Failed to load user customized default physics material: %s, will fallback to built-in default physics material
+
+### 9644
+
+[Physics] Failed to find ear. There might be self-intersection in the polygon.
 
 ### 10001
 
@@ -3431,7 +3471,7 @@ The shadow visible distance is so small that CSM stratification is not effective
 
 ### 15004
 
-The native folder may be generated from older versions, please refer https://docs.cocos.com/creator/manual/en/release-notes/ to upgrade.
+The native folder may be generated from older versions, please refer <https://docs.cocos.com/creator/manual/en/release-notes/> to upgrade.
 
 ### 15100
 
@@ -3455,11 +3495,11 @@ Camera '%s' clear flag is skybox, but skybox is disabled,  may cause strange bac
 
 ### 16101
 
-The effect('%s') you are looking for does not exist, please confirm the effect name in the editor. NOTE: Since 3.6, the name of the built-in effect has been changed to its name in the editor, please check it out. More information please refer to https://docs.cocos.com/creator/manual/en/shader/effect-inspector.html
+The effect('%s') you are looking for does not exist, please confirm the effect name in the editor. NOTE: Since 3.6, the name of the built-in effect has been changed to its name in the editor, please check it out. More information please refer to <https://docs.cocos.com/creator/manual/en/shader/effect-inspector.html>
 
 ### 16201
 
-The asset replacing failed, can not found override asset('%s') for '%s' 
+The asset replacing failed, can not found override asset('%s') for '%s'
 
 ### 16301
 
@@ -3888,3 +3928,51 @@ Can't find the spriteFrame of tilesets %s
 ### 16407
 
 Spline error: invalid mode
+
+### 16408
+
+[Physics2D] b2PolygonShape failed to decompose polygon into convex polygons, node name: %s
+
+### 16409
+
+setVertexEffectDelegate is deprecated since spine 4.2.
+
+### 16410
+
+Debug bones or slots is invalid in cached mode.
+
+### 16411
+
+Slots visible range can not be modified in cached mode.
+
+### 16412
+
+Track index can not greater than 0 in cached mode.
+
+### 16413
+
+Track index can not greater than 0 in cached mode.
+
+### 16414
+
+'getCurrent' interface can not be invoked in cached mode.
+
+### 16415
+
+cached mode not support setMix!!!
+
+### 16416
+
+'clearTracks' interface can not be invoked in cached mode.
+
+### 16417
+
+'clearTrack' interface can not be invoked in cached mode.
+
+### 16418
+
+Debug bones or slots is invalid in cached mode.
+
+### 16419
+
+Spine version not supported.

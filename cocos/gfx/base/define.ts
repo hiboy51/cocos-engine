@@ -284,6 +284,13 @@ export enum FormatType {
     FLOAT,
 }
 
+export enum SampleType {
+    FLOAT,
+    UNFILTERABLE_FLOAT,
+    SINT,
+    UINT,
+}
+
 export enum Type {
     UNKNOWN,
     BOOL,
@@ -375,6 +382,21 @@ export enum TextureType {
     CUBE,
     TEX1D_ARRAY,
     TEX2D_ARRAY,
+}
+
+export enum ViewDimension {
+    UNKNOWN,
+    BUFFER,
+    TEX1D,
+    TEX1D_ARRAY,
+    TEX2D,
+    TEX2D_ARRAY,
+    TEX2DMS,
+    TEX2DMS_ARRAY,
+    TEX3D,
+    TEXCUBE,
+    TEXCUBE_ARRAY,
+    RAYTRACING_ACCELERATION_STRUCTURE,
 }
 
 export enum TextureUsageBit {
@@ -1790,6 +1812,10 @@ export class DescriptorSetLayoutBinding {
         public descriptorType: DescriptorType = DescriptorType.UNKNOWN,
         public count: number = 0,
         public stageFlags: ShaderStageFlags = ShaderStageFlagBit.NONE,
+        public access: MemoryAccess = MemoryAccessBit.READ_ONLY,
+        public viewDimension: ViewDimension = ViewDimension.UNKNOWN,
+        public sampleType: SampleType = SampleType.FLOAT,
+        public format: Format = Format.UNKNOWN,
         public immutableSamplers: Sampler[] = [],
     ) {}
 
@@ -1798,6 +1824,10 @@ export class DescriptorSetLayoutBinding {
         this.descriptorType = info.descriptorType;
         this.count = info.count;
         this.stageFlags = info.stageFlags;
+        this.access = info.access;
+        this.viewDimension = info.viewDimension;
+        this.sampleType = info.sampleType;
+        this.format = info.format;
         this.immutableSamplers = info.immutableSamplers.slice();
         return this;
     }
@@ -2224,6 +2254,8 @@ export const DESCRIPTOR_SAMPLER_TYPE = DescriptorType.SAMPLER_TEXTURE | Descript
     | DescriptorType.STORAGE_IMAGE | DescriptorType.INPUT_ATTACHMENT;
 
 export const DESCRIPTOR_DYNAMIC_TYPE = DescriptorType.DYNAMIC_STORAGE_BUFFER | DescriptorType.DYNAMIC_UNIFORM_BUFFER;
+
+export const DESCRIPTOR_STORAGE_BUFFER_TYPE = DescriptorType.STORAGE_BUFFER | DescriptorType.DYNAMIC_STORAGE_BUFFER;
 
 export const DRAW_INFO_SIZE = 28;
 

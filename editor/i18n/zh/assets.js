@@ -10,17 +10,20 @@ module.exports = {
         cloneToDirectoryIllegal: '保存路径请限制在当前项目 /assets 路径内',
         preview: {
             header: '预览',
+            resetCameraView: '复位摄像机视图',
         },
         spine: {
             skin: '皮肤',
             animation: '动画',
             loop: '循环',
             timeScale: '速率',
-            premultipliedAlpha: '启用贴图预乘',
-            useTint: '启用染色效果',
-            debugSlots: '调试槽',
-            debugBones: '调试骨骼',
-            debugMesh: '调试网格',
+            enable: '启用',
+            premultipliedAlpha: '贴图预乘',
+            useTint: '染色效果',
+            debug: '调试',
+            debugSlots: '槽',
+            debugBones: '骨骼',
+            debugMesh: '网格',
         },
     },
 
@@ -502,6 +505,10 @@ module.exports = {
     menu: {
         node: '节点菜单',
         component: '组件菜单',
+
+        copy_property_path: '复制属性路径',
+        copy_property_value: '复制值',
+        paste_property_value: '粘贴值',
 
         remove_component: '删除组件',
         reset_component: '重置组件',
